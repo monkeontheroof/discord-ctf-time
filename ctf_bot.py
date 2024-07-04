@@ -39,7 +39,7 @@ async def upcoming(interaction: discord.Interaction, limit: int):
 
             # Create the table header
             table_header = "```css\n"  # Using CSS code block for monospace font
-            table_header += f"{'Title':<30} {'Start':<20} {'Finish':<20} {'URL':<30}\n"
+            table_header += f"{'Title':<50} {'Start':<30} {'Finish':<30} {'URL':<30}\n"
             table_header += "-" * 80 + "\n"
 
             # Add each event to the table
@@ -49,7 +49,7 @@ async def upcoming(interaction: discord.Interaction, limit: int):
                 start = event['start'][:20]  # Truncate start time if too long
                 finish = event['finish'][:20]  # Truncate finish time if too long
                 url = event['url'][:30]  # Truncate URL if too long
-                table_rows += f"{title:<30} {start:<20} {finish:<20} {url:<30}\n"
+                table_rows += f"{title:<50} {start:<30} {finish:<30} {url:<30}\n"
 
             # Combine header and rows
             table = table_header + table_rows + "```"
