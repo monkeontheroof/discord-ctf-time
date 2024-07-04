@@ -45,8 +45,9 @@ async def upcoming(interaction: discord.Interaction, limit: int):
         # Initial page
         page = 0
         embed = create_event_embed(ctf_events, page, page_size, num_pages)
-        view = create_pagination_view(page, num_pages, interaction, limit)
+        view = PaginationView(ctf_events, page_size, num_pages, limit)
 
+        # Send the initial message
         await interaction.response.send_message(embed=embed, view=view)
 
     except Exception as e:
@@ -70,34 +71,32 @@ def create_event_embed(events, page, page_size, num_pages):
     embed.set_footer(text=f"Page {page + 1}/{num_pages}")
     return embed
 
-def create_pagination_view(current_page, total_pages, interaction, limit):
-    view = View()
+class PaginationView(View):
+    def __init__(self, events, page_size, num_pages, limit):
+        super().__init__()
+        self.events = events
+        self.page_size = page_size
+        self.num_pages = num_pages
+        self.limit = limit
+        self.current_page = 0
 
-    async def button_callback(interaction):
-        nonlocal current_page
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary, disabled=True)
+    async def prev_button(self, button: Button, interaction: discord.Interaction):
+        if self.current_page > 0:
+            self.current_page -= 1
+            await self.update_message(interaction)
 
-        if interaction.custom_id == "prev":
-            current_page -= 1
-        elif interaction.custom_id == "next":
-            current_page += 1
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.primary, disabled=True)
+    async def next_button(self, button: Button, interaction: discord.Interaction):
+        if self.current_page < self.num_pages - 1:
+            self.current_page += 1
+            await self.update_message(interaction)
 
-        # Update embed and buttons
-        embed = create_event_embed(get_ctf_events(limit), current_page, page_size, total_pages)
-        view = create_pagination_view(current_page, total_pages, interaction, limit)
-
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    if current_page > 0:
-        prev_button = Button(label="Previous", style=discord.ButtonStyle.primary, custom_id="prev")
-        prev_button.callback = button_callback
-        view.add_item(prev_button)
-
-    if current_page < total_pages - 1:
-        next_button = Button(label="Next", style=discord.ButtonStyle.primary, custom_id="next")
-        next_button.callback = button_callback
-        view.add_item(next_button)
-
-    return view
+    async def update_message(self, interaction: discord.Interaction):
+        embed = create_event_embed(self.events, self.current_page, self.page_size, self.num_pages)
+        self.children[0].disabled = self.current_page == 0
+        self.children[1].disabled = self.current_page >= self.num_pages - 1
+        await interaction.response.edit_message(embed=embed, view=self)
 
 def get_ctf_events(limit=5):
     url = f'https://ctftime.org/api/v1/events/?limit={limit}'
