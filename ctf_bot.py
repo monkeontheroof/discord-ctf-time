@@ -7,6 +7,7 @@ from discord.ext import commands
 from discord import app_commands
 import os
 from dotenv import load_dotenv
+from tabulate import tabulate
 
 # Load environment variables from .env file
 load_dotenv()
@@ -34,10 +35,12 @@ async def upcoming(interaction: discord.Interaction, limit: int):
     try:
         ctf_events = get_ctf_events(limit)
         if ctf_events:
-            await interaction.response.send_message("Here are the upcoming CTF events:", ephemeral=True)
-
-            for embed in ctf_events:
-                await interaction.followup.send(embed=embed)
+            # Format events into a table
+            headers = ["Title", "Start", "Finish", "URL"]
+            table = tabulate(ctf_events, headers=headers, tablefmt="grid")
+            
+            # Send the formatted table to Discord
+            await interaction.response.send_message(f"```\n{table}\n```", ephemeral=True)
         else:
             await interaction.response.send_message('Could not fetch CTF events.', ephemeral=True)
 
@@ -54,22 +57,16 @@ def get_ctf_events(limit=5):
         response.raise_for_status()
         events = response.json()
 
-        embeds = []
+        # Prepare data for table
+        event_data = []
         for event in events:
             title = event['title']
             start = format_datetime(event['start'])
             finish = format_datetime(event['finish'])
             event_url = event['url']
-            color = random.randint(0, 0xFFFFFF)
-            icon = random.choice(["🔥", "🚀", "✨", "🏆", "🔍"])
+            event_data.append([title, start, finish, event_url])
 
-            embed = discord.Embed(title=f"{icon} {title}", color=color)
-            embed.add_field(name="Start", value=start, inline=False)
-            embed.add_field(name="Finish", value=finish, inline=False)
-            embed.add_field(name="URL", value=f"[Link]({event_url})", inline=False)
-            embeds.append(embed)
-
-        return embeds
+        return event_data
     except HTTPError as http_err:
         print(f'HTTP error occurred: {http_err}')
         return None
