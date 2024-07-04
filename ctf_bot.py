@@ -34,11 +34,24 @@ async def upcoming(interaction: discord.Interaction, limit: int):
     try:
         ctf_events = get_ctf_events(limit)
         if ctf_events:
-            # Create a discord Embed
-            embed = discord.Embed(title="Upcoming CTF Events", color=discord.Color.blue())
+            # Create a discord Embed with a different color (gold)
+            embed = discord.Embed(title="Upcoming CTF Events", color=discord.Color.gold())
 
+            # Create the table header
+            table_header = "```css\n"  # Using CSS code block for monospace font
+            table_header += f"{'Title':<30} {'Start':<20} {'Finish':<20} {'URL':<30}\n"
+            table_header += "-" * 100 + "\n"
+
+            # Add each event to the table
+            table_rows = ""
             for event in ctf_events:
-                embed.add_field(name=event['title'], value=f"Start: `{event['start']}`\nFinish: `{event['finish']}`\nURL: [Link]({event['url']})", inline=False)
+                table_rows += f"{event['title']:<30} {event['start']:<20} {event['finish']:<20} {event['url']:<30}\n"
+
+            # Combine header and rows
+            table = table_header + table_rows + "```"
+
+            # Add table to embed description
+            embed.description = table
 
             await interaction.response.send_message(embed=embed, ephemeral=True)
         else:
