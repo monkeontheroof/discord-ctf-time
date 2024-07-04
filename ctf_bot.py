@@ -5,6 +5,7 @@ from requests.exceptions import HTTPError
 from dateutil import parser
 from discord.ext import commands
 from discord import app_commands
+from discord.ui import Button, View
 import os
 from dotenv import load_dotenv
 
@@ -15,7 +16,7 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 
 intents = discord.Intents.default()
-intents.message_content = True  # Enable message content intent
+intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
@@ -33,16 +34,67 @@ async def upcoming(interaction: discord.Interaction, limit: int):
 
     try:
         ctf_events = get_ctf_events(limit)
-        if ctf_events:
-            await interaction.response.send_message("Here are the upcoming CTF events:", ephemeral=True)
-
-            for embed in ctf_events:
-                await interaction.followup.send(embed=embed)
-        else:
+        if not ctf_events:
             await interaction.response.send_message('Could not fetch CTF events.', ephemeral=True)
+            return
+
+        # Initialize pagination
+        page_size = 5
+        num_pages = (len(ctf_events) + page_size - 1) // page_size
+
+        # Initial page
+        page = 0
+        embed = create_event_embed(ctf_events, page, page_size, num_pages)
+        view = create_pagination_view(page, num_pages, interaction)
+
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
     except Exception as e:
         await interaction.response.send_message(f'An error occurred: {e}', ephemeral=True)
+
+def create_event_embed(events, page, page_size, num_pages):
+    start = page * page_size
+    end = min(start + page_size, len(events))
+
+    embed = discord.Embed(title="Upcoming CTF Events", color=random.randint(0, 0xFFFFFF))
+    for event in events[start:end]:
+        title = event['title']
+        start_time = format_datetime(event['start'])
+        finish_time = format_datetime(event['finish'])
+        event_url = event['url']
+        color = random.randint(0, 0xFFFFFF)
+        icon = random.choice(["🔥", "🚀", "✨", "🏆", "🔍"])
+
+        embed.add_field(name=f"{icon} {title}", value=f"**Start:** {start_time}\n**Finish:** {finish_time}\n[Link]({event_url})", inline=False)
+    
+    embed.set_footer(text=f"Page {page + 1}/{num_pages}")
+    return embed
+
+def create_pagination_view(current_page, total_pages, interaction):
+    view = View()
+    
+    if current_page > 0:
+        view.add_item(Button(label="Previous", style=discord.ButtonStyle.primary, custom_id="prev"))
+    
+    if current_page < total_pages - 1:
+        view.add_item(Button(label="Next", style=discord.ButtonStyle.primary, custom_id="next"))
+
+    async def button_callback(interaction):
+        nonlocal current_page
+
+        if interaction.custom_id == "prev":
+            current_page -= 1
+        elif interaction.custom_id == "next":
+            current_page += 1
+
+        # Update embed and buttons
+        embed = create_event_embed(get_ctf_events(limit), current_page, page_size, total_pages)
+        view = create_pagination_view(current_page, total_pages, interaction)
+
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    view.on_button_click = button_callback
+    return view
 
 def get_ctf_events(limit=5):
     url = f'https://ctftime.org/api/v1/events/?limit={limit}'
@@ -53,32 +105,17 @@ def get_ctf_events(limit=5):
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         events = response.json()
-
-        embeds = []
-        for event in events:
-            title = event['title']
-            start = format_datetime(event['start'])
-            finish = format_datetime(event['finish'])
-            event_url = event['url']
-            color = random.randint(0, 0xFFFFFF)
-            icon = random.choice(["🔥", "🚀", "✨", "🏆", "🔍"])
-
-            embed = discord.Embed(title=f"{icon} {title}", color=color)
-            embed.add_field(name="Start", value=start, inline=False)
-            embed.add_field(name="Finish", value=finish, inline=False)
-            embed.add_field(name="URL", value=f"[Link]({event_url})", inline=False)
-            embeds.append(embed)
-
-        return embeds
+        return events
     except HTTPError as http_err:
         print(f'HTTP error occurred: {http_err}')
-        return None
+        return []
     except Exception as err:
         print(f'Error occurred: {err}')
-        return None
+        return []
 
 def format_datetime(datetime_str):
     datetime_obj = parser.isoparse(datetime_str)
     return datetime_obj.strftime("%d-%m-%Y %H:%M:%S")
 
 bot.run(DISCORD_TOKEN)
+
