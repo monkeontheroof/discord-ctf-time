@@ -106,7 +106,10 @@ class PaginationView(View):
         embed = create_event_embed(self.events, self.current_page, self.page_size, self.num_pages)
         self.prev_button.disabled = self.current_page == 0
         self.next_button.disabled = self.current_page >= self.num_pages - 1
-        await interaction.response.edit_message(embed=embed, view=self)
+        try:
+            await interaction.response.edit_message(embed=embed, view=self)
+        except discord.InteractionResponded as e:
+            print(f'Interaction response error: {e}')
 
 def get_ctf_events(limit=5):
     url = f'https://ctftime.org/api/v1/events/?limit={limit}'
