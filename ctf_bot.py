@@ -4,7 +4,6 @@ import random
 from requests.exceptions import HTTPError
 from dateutil import parser
 from discord.ext import commands
-from discord import app_commands
 import os
 from dotenv import load_dotenv
 
@@ -78,14 +77,19 @@ def format_datetime(datetime_str):
     return datetime_obj.strftime("%d-%m-%Y %H:%M:%S")
 
 def format_as_markdown_table(data, headers):
+    # Calculate maximum widths for columns
+    col_widths = [max(len(str(row[i])) for row in data) for i in range(len(headers))]
+    
     # Create the table header
-    table = "| " + " | ".join(headers) + " |\n"
-    table += "| " + " | ".join(["---"] * len(headers)) + " |\n"
+    table = "```md\n"
+    table += " | ".join(headers) + "\n"
+    table += "-".join(['-' * width for width in col_widths]) + "\n"
     
     # Add the data rows
     for row in data:
-        table += "| " + " | ".join(str(cell) for cell in row) + " |\n"
+        table += " | ".join(str(row[i]).ljust(col_widths[i]) for i in range(len(headers))) + "\n"
     
+    table += "```"
     return table
 
 bot.run(DISCORD_TOKEN)
