@@ -4,6 +4,7 @@ import random
 from requests.exceptions import HTTPError
 from dateutil import parser
 from discord.ext import commands
+from discord import app_commands
 import os
 from dotenv import load_dotenv
 
