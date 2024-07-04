@@ -63,10 +63,14 @@ def create_event_embed(events, page, page_size, num_pages):
         start_time = format_datetime(event['start'])
         finish_time = format_datetime(event['finish'])
         event_url = event['url']
-        color = random.randint(0, 0xFFFFFF)
         icon = random.choice(["🔥", "🚀", "✨", "🏆", "🔍"])
 
-        embed.add_field(name=f"{icon} {title}", value=f"**Start:** {start_time}\n**Finish:** {finish_time}\n[Link]({event_url})", inline=False)
+        # Format each field with a clean look
+        embed.add_field(
+            name=f"{icon} {title}",
+            value=f"**Start:** {start_time}\n**Finish:** {finish_time}\n[Link to Event]({event_url})",
+            inline=False
+        )
     
     embed.set_footer(text=f"Page {page + 1}/{num_pages}")
     return embed
@@ -79,6 +83,12 @@ class PaginationView(View):
         self.num_pages = num_pages
         self.limit = limit
         self.current_page = 0
+
+        # Initialize buttons
+        self.prev_button = Button(label="Previous", style=discord.ButtonStyle.primary, disabled=True)
+        self.next_button = Button(label="Next", style=discord.ButtonStyle.primary, disabled=num_pages <= 1)
+        self.add_item(self.prev_button)
+        self.add_item(self.next_button)
 
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary, disabled=True)
     async def prev_button(self, button: Button, interaction: discord.Interaction):
@@ -94,8 +104,8 @@ class PaginationView(View):
 
     async def update_message(self, interaction: discord.Interaction):
         embed = create_event_embed(self.events, self.current_page, self.page_size, self.num_pages)
-        self.children[0].disabled = self.current_page == 0
-        self.children[1].disabled = self.current_page >= self.num_pages - 1
+        self.prev_button.disabled = self.current_page == 0
+        self.next_button.disabled = self.current_page >= self.num_pages - 1
         await interaction.response.edit_message(embed=embed, view=self)
 
 def get_ctf_events(limit=5):
