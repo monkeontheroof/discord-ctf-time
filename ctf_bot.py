@@ -5,7 +5,6 @@ from requests.exceptions import HTTPError
 from dateutil import parser
 from discord.ext import commands
 from discord import app_commands
-from discord.ui import Button, View
 import os
 from dotenv import load_dotenv
 
@@ -16,7 +15,7 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 
 intents = discord.Intents.default()
-intents.message_content = True
+intents.message_content = True  # Enable message content intent
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
@@ -34,82 +33,16 @@ async def upcoming(interaction: discord.Interaction, limit: int):
 
     try:
         ctf_events = get_ctf_events(limit)
-        if not ctf_events:
+        if ctf_events:
+            await interaction.response.send_message("Here are the upcoming CTF events:", ephemeral=True)
+
+            for embed in ctf_events:
+                await interaction.followup.send(embed=embed)
+        else:
             await interaction.response.send_message('Could not fetch CTF events.', ephemeral=True)
-            return
-
-        # Initialize pagination
-        page_size = 5
-        num_pages = (len(ctf_events) + page_size - 1) // page_size
-
-        # Initial page
-        page = 0
-        embed = create_event_embed(ctf_events, page, page_size, num_pages)
-        view = PaginationView(ctf_events, page_size, num_pages, limit)
-
-        # Send the initial message
-        await interaction.response.send_message(embed=embed, view=view)
 
     except Exception as e:
         await interaction.response.send_message(f'An error occurred: {e}', ephemeral=True)
-
-def create_event_embed(events, page, page_size, num_pages):
-    start = page * page_size
-    end = min(start + page_size, len(events))
-
-    embed = discord.Embed(title="Upcoming CTF Events", color=random.randint(0, 0xFFFFFF))
-    for event in events[start:end]:
-        title = event['title']
-        start_time = format_datetime(event['start'])
-        finish_time = format_datetime(event['finish'])
-        event_url = event['url']
-        icon = random.choice(["🔥", "🚀", "✨", "🏆", "🔍"])
-
-        # Format each field with a clean look
-        embed.add_field(
-            name=f"{icon} {title}",
-            value=f"**Start:** {start_time}\n**Finish:** {finish_time}\n[Link to Event]({event_url})",
-            inline=False
-        )
-    
-    embed.set_footer(text=f"Page {page + 1}/{num_pages}")
-    return embed
-
-class PaginationView(View):
-    def __init__(self, events, page_size, num_pages, limit):
-        super().__init__()
-        self.events = events
-        self.page_size = page_size
-        self.num_pages = num_pages
-        self.limit = limit
-        self.current_page = 0
-
-        # Initialize buttons
-        self.prev_button = Button(label="Previous", style=discord.ButtonStyle.primary, disabled=True)
-        self.next_button = Button(label="Next", style=discord.ButtonStyle.primary, disabled=num_pages <= 1)
-        self.add_item(self.prev_button)
-        self.add_item(self.next_button)
-
-    @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary, disabled=True)
-    async def prev_button(self, button: Button, interaction: discord.Interaction):
-        if self.current_page > 0:
-            self.current_page -= 1
-            await self.update_message(interaction)
-
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.primary, disabled=True)
-    async def next_button(self, button: Button, interaction: discord.Interaction):
-        if self.current_page < self.num_pages - 1:
-            self.current_page += 1
-            await self.update_message(interaction)
-
-    async def update_message(self, interaction: discord.Interaction):
-        embed = create_event_embed(self.events, self.current_page, self.page_size, self.num_pages)
-        self.prev_button.disabled = self.current_page == 0
-        self.next_button.disabled = self.current_page >= self.num_pages - 1
-        try:
-            await interaction.response.edit_message(embed=embed, view=self)
-        except discord.InteractionResponded as e:
-            print(f'Interaction response error: {e}')
 
 def get_ctf_events(limit=5):
     url = f'https://ctftime.org/api/v1/events/?limit={limit}'
@@ -120,13 +53,29 @@ def get_ctf_events(limit=5):
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         events = response.json()
-        return events
+
+        embeds = []
+        for event in events:
+            title = event['title']
+            start = format_datetime(event['start'])
+            finish = format_datetime(event['finish'])
+            event_url = event['url']
+            color = random.randint(0, 0xFFFFFF)
+            icon = random.choice(["🔥", "🚀", "✨", "🏆", "🔍"])
+
+            embed = discord.Embed(title=f"{icon} {title}", color=color)
+            embed.add_field(name="Start", value=start, inline=False)
+            embed.add_field(name="Finish", value=finish, inline=False)
+            embed.add_field(name="URL", value=f"[Link]({event_url})", inline=False)
+            embeds.append(embed)
+
+        return embeds
     except HTTPError as http_err:
         print(f'HTTP error occurred: {http_err}')
-        return []
+        return None
     except Exception as err:
         print(f'Error occurred: {err}')
-        return []
+        return None
 
 def format_datetime(datetime_str):
     datetime_obj = parser.isoparse(datetime_str)
