@@ -1,6 +1,5 @@
 import discord
 import requests
-import random
 from requests.exceptions import HTTPError
 from dateutil import parser
 from discord.ext import commands
@@ -39,17 +38,17 @@ async def upcoming(interaction: discord.Interaction, limit: int):
 
             # Create the table header
             table_header = "```css\n"  # Using CSS code block for monospace font
-            table_header += f"{'Title':<50} {'Start':<30} {'Finish':<30} {'URL':<30}\n"
+            table_header += f"{'Title':<25} {'Start':<19} {'Finish':<19} {'URL'}\n"
             table_header += "-" * 80 + "\n"
 
             # Add each event to the table
             table_rows = ""
             for event in ctf_events:
-                title = event['title'][:30]  # Truncate title if too long
-                start = event['start'][:20]  # Truncate start time if too long
-                finish = event['finish'][:20]  # Truncate finish time if too long
-                url = event['url'][:30]  # Truncate URL if too long
-                table_rows += f"{title:<50} {start:<30} {finish:<30} {url:<30}\n"
+                title = event['title'][:25]  # Truncate title if too long
+                start = event['start'][:19]  # Truncate start time if too long
+                finish = event['finish'][:19]  # Truncate finish time if too long
+                url = event['url'][:40]  # Truncate URL if too long
+                table_rows += f"{title:<25} {start:<19} {finish:<19} {url}\n"
 
             # Combine header and rows
             table = table_header + table_rows + "```"
