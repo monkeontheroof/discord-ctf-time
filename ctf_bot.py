@@ -45,9 +45,9 @@ async def upcoming(interaction: discord.Interaction, limit: int):
         # Initial page
         page = 0
         embed = create_event_embed(ctf_events, page, page_size, num_pages)
-        view = create_pagination_view(page, num_pages, interaction)
+        view = create_pagination_view(page, num_pages, interaction, limit)
 
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await interaction.response.send_message(embed=embed, view=view)
 
     except Exception as e:
         await interaction.response.send_message(f'An error occurred: {e}', ephemeral=True)
@@ -70,14 +70,8 @@ def create_event_embed(events, page, page_size, num_pages):
     embed.set_footer(text=f"Page {page + 1}/{num_pages}")
     return embed
 
-def create_pagination_view(current_page, total_pages, interaction):
+def create_pagination_view(current_page, total_pages, interaction, limit):
     view = View()
-    
-    if current_page > 0:
-        view.add_item(Button(label="Previous", style=discord.ButtonStyle.primary, custom_id="prev"))
-    
-    if current_page < total_pages - 1:
-        view.add_item(Button(label="Next", style=discord.ButtonStyle.primary, custom_id="next"))
 
     async def button_callback(interaction):
         nonlocal current_page
@@ -89,11 +83,20 @@ def create_pagination_view(current_page, total_pages, interaction):
 
         # Update embed and buttons
         embed = create_event_embed(get_ctf_events(limit), current_page, page_size, total_pages)
-        view = create_pagination_view(current_page, total_pages, interaction)
+        view = create_pagination_view(current_page, total_pages, interaction, limit)
 
         await interaction.response.edit_message(embed=embed, view=view)
 
-    view.on_button_click = button_callback
+    if current_page > 0:
+        prev_button = Button(label="Previous", style=discord.ButtonStyle.primary, custom_id="prev")
+        prev_button.callback = button_callback
+        view.add_item(prev_button)
+
+    if current_page < total_pages - 1:
+        next_button = Button(label="Next", style=discord.ButtonStyle.primary, custom_id="next")
+        next_button.callback = button_callback
+        view.add_item(next_button)
+
     return view
 
 def get_ctf_events(limit=5):
@@ -118,4 +121,3 @@ def format_datetime(datetime_str):
     return datetime_obj.strftime("%d-%m-%Y %H:%M:%S")
 
 bot.run(DISCORD_TOKEN)
-
