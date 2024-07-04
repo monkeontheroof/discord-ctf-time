@@ -7,7 +7,6 @@ from discord.ext import commands
 from discord import app_commands
 import os
 from dotenv import load_dotenv
-from tabulate import tabulate
 
 # Load environment variables from .env file
 load_dotenv()
@@ -35,9 +34,9 @@ async def upcoming(interaction: discord.Interaction, limit: int):
     try:
         ctf_events = get_ctf_events(limit)
         if ctf_events:
-            # Format events into a table
+            # Format events into a Markdown table
             headers = ["Title", "Start", "Finish", "URL"]
-            table = tabulate(ctf_events, headers=headers, tablefmt="grid")
+            table = format_as_markdown_table(ctf_events, headers)
             
             # Send the formatted table to Discord
             await interaction.response.send_message(f"```\n{table}\n```", ephemeral=True)
@@ -57,7 +56,7 @@ def get_ctf_events(limit=5):
         response.raise_for_status()
         events = response.json()
 
-        # Prepare data for table
+        # Prepare data for Markdown table
         event_data = []
         for event in events:
             title = event['title']
@@ -77,5 +76,16 @@ def get_ctf_events(limit=5):
 def format_datetime(datetime_str):
     datetime_obj = parser.isoparse(datetime_str)
     return datetime_obj.strftime("%d-%m-%Y %H:%M:%S")
+
+def format_as_markdown_table(data, headers):
+    # Create the table header
+    table = "| " + " | ".join(headers) + " |\n"
+    table += "| " + " | ".join(["---"] * len(headers)) + " |\n"
+    
+    # Add the data rows
+    for row in data:
+        table += "| " + " | ".join(str(cell) for cell in row) + " |\n"
+    
+    return table
 
 bot.run(DISCORD_TOKEN)
