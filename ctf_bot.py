@@ -32,14 +32,10 @@ async def upcoming(interaction: discord.Interaction, limit: int):
         return
 
     try:
-        ctf_events = get_ctf_events(limit)
-        if ctf_events:
-            # Format events into a Markdown table
-            headers = ["Title", "Start", "Finish", "URL"]
-            table = format_as_markdown_table(ctf_events, headers)
-            
-            # Send the formatted table to Discord
-            await interaction.response.send_message(f"```\n{table}\n```", ephemeral=True)
+        ctf_events_table = get_ctf_events(limit)
+        if ctf_events_table:
+            # Send the table wrapped in quotes
+            await interaction.response.send_message(f"```\n{ctf_events_table}\n```", ephemeral=True)
         else:
             await interaction.response.send_message('Could not fetch CTF events.', ephemeral=True)
 
@@ -56,16 +52,20 @@ def get_ctf_events(limit=5):
         response.raise_for_status()
         events = response.json()
 
-        # Prepare data for Markdown table
-        event_data = []
+        # Create a table header
+        table = f"{'Title':<30} {'Start':<20} {'Finish':<20} {'URL':<30}\n"
+        table += "-" * 100 + "\n"
+
         for event in events:
             title = event['title']
             start = format_datetime(event['start'])
             finish = format_datetime(event['finish'])
             event_url = event['url']
-            event_data.append([title, start, finish, event_url])
 
-        return event_data
+            # Format each row of the table
+            table += f"{title:<30} {start:<20} {finish:<20} {event_url:<30}\n"
+
+        return table
     except HTTPError as http_err:
         print(f'HTTP error occurred: {http_err}')
         return None
@@ -76,21 +76,5 @@ def get_ctf_events(limit=5):
 def format_datetime(datetime_str):
     datetime_obj = parser.isoparse(datetime_str)
     return datetime_obj.strftime("%d-%m-%Y %H:%M:%S")
-
-def format_as_markdown_table(data, headers):
-    # Calculate maximum widths for columns
-    col_widths = [max(len(str(row[i])) for row in data) for i in range(len(headers))]
-    
-    # Create the table header
-    table = "```md\n"
-    table += " | ".join(headers) + "\n"
-    table += "-".join(['-' * width for width in col_widths]) + "\n"
-    
-    # Add the data rows
-    for row in data:
-        table += " | ".join(str(row[i]).ljust(col_widths[i]) for i in range(len(headers))) + "\n"
-    
-    table += "```"
-    return table
 
 bot.run(DISCORD_TOKEN)
