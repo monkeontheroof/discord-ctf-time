@@ -1,5 +1,6 @@
 import discord
 import requests
+import random
 from requests.exceptions import HTTPError
 from dateutil import parser
 from discord.ext import commands
@@ -33,30 +34,12 @@ async def upcoming(interaction: discord.Interaction, limit: int):
     try:
         ctf_events = get_ctf_events(limit)
         if ctf_events:
-            # Create a discord Embed with a different color (gold)
-            embed = discord.Embed(title="Upcoming CTF Events", color=discord.Color.gold())
+            # Create a discord Embed
+            embed = discord.Embed(title="Upcoming CTF Events", color=discord.Color.blue())
 
-            # Create the table header
-            table_header = "```css\n"  # Using CSS code block for monospace font
-            table_header += f"{'Title':<25} {'Start':<19} {'Finish':<19} {'URL'}\n"
-            table_header += "-" * 80 + "\n"
-
-            # Add each event to the table
-            table_rows = ""
             for event in ctf_events:
-                title = event['title'][:25]  # Truncate title if too long
-                start = event['start'][:19]  # Truncate start time if too long
-                finish = event['finish'][:19]  # Truncate finish time if too long
-                url = event['url'][:40]  # Truncate URL if too long
-                table_rows += f"{title:<25} {start:<19} {finish:<19} {url}\n"
+                embed.add_field(name=event['title'], value=f"Start: `{event['start']}`\nFinish: `{event['finish']}`\nURL: [Link]({event['url']})", inline=False)
 
-            # Combine header and rows
-            table = table_header + table_rows + "```"
-
-            # Add table to embed description
-            embed.description = table
-
-            # Send the embed
             await interaction.response.send_message(embed=embed, ephemeral=True)
         else:
             await interaction.response.send_message('Could not fetch CTF events.', ephemeral=True)
