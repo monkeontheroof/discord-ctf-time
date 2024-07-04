@@ -38,7 +38,7 @@ async def upcoming(interaction: discord.Interaction, limit: int):
             embed = discord.Embed(title="Upcoming CTF Events", color=discord.Color.blue())
 
             for event in ctf_events:
-                embed.add_field(name=event['title'], value=f"Start: {event['start']}\nFinish: {event['finish']}\nURL: [{event['url']}]({event['url']})", inline=False)
+                embed.add_field(name=event['title'], value=f"Start: {event['start']}\nFinish: {event['finish']}\nURL: [Link]({event['url']})", inline=False)
 
             await interaction.response.send_message(embed=embed, ephemeral=True)
         else:
