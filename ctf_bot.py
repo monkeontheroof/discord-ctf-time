@@ -32,10 +32,15 @@ async def upcoming(interaction: discord.Interaction, limit: int):
         return
 
     try:
-        ctf_events_table = get_ctf_events(limit)
-        if ctf_events_table:
-            # Send the table wrapped in quotes
-            await interaction.response.send_message(f"```\n{ctf_events_table}\n```", ephemeral=True)
+        ctf_events = get_ctf_events(limit)
+        if ctf_events:
+            # Create a discord Embed
+            embed = discord.Embed(title="Upcoming CTF Events", color=discord.Color.blue())
+
+            for event in ctf_events:
+                embed.add_field(name=event['title'], value=f"Start: {event['start']}\nFinish: {event['finish']}\nURL: [{event['url']}]({event['url']})", inline=False)
+
+            await interaction.response.send_message(embed=embed, ephemeral=True)
         else:
             await interaction.response.send_message('Could not fetch CTF events.', ephemeral=True)
 
@@ -52,20 +57,17 @@ def get_ctf_events(limit=5):
         response.raise_for_status()
         events = response.json()
 
-        # Create a table header
-        table = f"{'Title':<30} {'Start':<20} {'Finish':<20} {'URL':<30}\n"
-        table += "-" * 100 + "\n"
-
+        formatted_events = []
         for event in events:
-            title = event['title']
-            start = format_datetime(event['start'])
-            finish = format_datetime(event['finish'])
-            event_url = event['url']
+            formatted_event = {
+                'title': event['title'],
+                'start': format_datetime(event['start']),
+                'finish': format_datetime(event['finish']),
+                'url': event['url']
+            }
+            formatted_events.append(formatted_event)
 
-            # Format each row of the table
-            table += f"{title:<30} {start:<20} {finish:<20} {event_url:<30}\n"
-
-        return table
+        return formatted_events
     except HTTPError as http_err:
         print(f'HTTP error occurred: {http_err}')
         return None
