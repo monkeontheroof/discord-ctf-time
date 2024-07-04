@@ -40,12 +40,16 @@ async def upcoming(interaction: discord.Interaction, limit: int):
             # Create the table header
             table_header = "```css\n"  # Using CSS code block for monospace font
             table_header += f"{'Title':<30} {'Start':<20} {'Finish':<20} {'URL':<30}\n"
-            table_header += "-" * 100 + "\n"
+            table_header += "-" * 80 + "\n"
 
             # Add each event to the table
             table_rows = ""
             for event in ctf_events:
-                table_rows += f"{event['title']:<30} {event['start']:<20} {event['finish']:<20} {event['url']:<30}\n"
+                title = event['title'][:30]  # Truncate title if too long
+                start = event['start'][:20]  # Truncate start time if too long
+                finish = event['finish'][:20]  # Truncate finish time if too long
+                url = event['url'][:30]  # Truncate URL if too long
+                table_rows += f"{title:<30} {start:<20} {finish:<20} {url:<30}\n"
 
             # Combine header and rows
             table = table_header + table_rows + "```"
@@ -53,6 +57,7 @@ async def upcoming(interaction: discord.Interaction, limit: int):
             # Add table to embed description
             embed.description = table
 
+            # Send the embed
             await interaction.response.send_message(embed=embed, ephemeral=True)
         else:
             await interaction.response.send_message('Could not fetch CTF events.', ephemeral=True)
