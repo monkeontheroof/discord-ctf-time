@@ -1,5 +1,6 @@
 import discord
 import requests
+import random
 from requests.exceptions import HTTPError
 from dateutil import parser
 from discord.ext import commands
@@ -18,6 +19,8 @@ intents.message_content = True  # Enable message content intent
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+emojis = ["🔥", "🚀", "🏆", "🎯", "💻", "🔐", "🛡️", "🔍", "📟", "⚔️", "🥷🏿", "🤖", "👾", "🗡️"]
+
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
@@ -34,25 +37,46 @@ async def upcoming(interaction: discord.Interaction, limit: int):
         ctf_events = get_ctf_events(limit)
         if ctf_events:
             # Create a discord Embed
-            embed = discord.Embed(title="Upcoming CTF Events", color=discord.Color.blue())
+            embed = discord.Embed(title="Upcoming CTF Events", color=discord.Color.green())
             for event in ctf_events:
+                emoji = random.choice(emojis)
+                # embed.add_field(
+                #     name=f"{emoji} **{event['title']}** {emoji}",
+                #     value=(
+                #         f"```"
+                #         f"| **Field**           | **Details**                             |\n"
+                #         f"|---------------------|-----------------------------------------|\n"
+                #         f"| **🗓️ Start:**       | {event['start']}                        |\n"
+                #         f"| **🗓️ End:**         | {event['finish']}                       |\n"
+                #         f"| **🎯 Format:**      | {event['format']}                       |\n"
+                #         f"| **👥 Participants:**| {event['participants']}                 |\n"
+                #         f"| **⚖️ Weight:**      | {event['weight']}                 |\n"
+                #         f"| **🔗 [Event Link]** | [Go to event]({event['url']})           |\n"
+                #         f"```"
+                #         "------------------------------------\n"
+                #     ),
+                #     inline=False
+                # )
                 embed.add_field(
-                    name=f"🏆 {event['title']}",
+                    name=f"     {emoji} {event['title']:^40} {emoji}",
                     value=(
-                        f"**🗓️ Start:** `{event['start']}`\n"
-                        f"**⏰ End:** `{event['finish']}`\n"
-                        f"**🔍 Format:** `{event['format']}`\n"
-                        f"**👥 Participants:** `{event['participants']}`\n"
-                        f"**🔗 [Event Link]({event['url']})**"
+                        f"|------------------------------------------------|\n"
+                        f" **📅 Start:** `{event['start']}`\n"
+                        f" **📅 End:** `{event['finish']}`\n"
+                        f" **🎯 Format:** `{event['format']}`\n"
+                        f" **👥 Participants:** `{event['participants']}`\n"
+                        f" **⚖️ Weight:** `{event['weight']}`\n"
+                        f" **🔗 [Go to event]({event['url']})**\n"
+                        f"|------------------------------------------------|\n\n"
                     ),
                     inline=False
                 )
             await interaction.response.send_message(embed=embed)
         else:
-            await interaction.response.send_message('Could not fetch CTF events.')
+            await interaction.response.send_message('Could not fetch CTF events.', ephemeral=True)
 
     except Exception as e:
-        await interaction.response.send_message(f'An error occurred: {e}')
+        await interaction.response.send_message(f'An error occurred: {e}', ephemeral=True)
 
 def get_ctf_events(limit=5):
     url = f'https://ctftime.org/api/v1/events/?limit={limit}'
@@ -72,6 +96,7 @@ def get_ctf_events(limit=5):
                 'finish': format_datetime(event['finish']),
                 'format': event.get('format', 'N/A'),  # Assuming 'format' might not always be available
                 'participants': event.get('participants', 'N/A'),  # Assuming 'participants' might not always be available
+                'weight': event.get('weight', 'N/A'),
                 'url': event['url']
             }
             formatted_events.append(formatted_event)
