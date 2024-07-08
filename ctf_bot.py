@@ -61,8 +61,8 @@ async def upcoming(interaction: discord.Interaction, limit: int):
                     name=f"     {emoji} {event['title']:^40} {emoji}",
                     value=(
                         f"|------------------------------------------------|\n"
-                        f" **📅 Start:** `{event['start']}`\n"
-                        f" **📅 End:** `{event['finish']}`\n"
+                        f" **🗓️ Start:** `{event['start']}`\n"
+                        f" **🗓️ End:** `{event['finish']}`\n"
                         f" **🎯 Format:** `{event['format']}`\n"
                         f" **👥 Participants:** `{event['participants']}`\n"
                         f" **⚖️ Weight:** `{event['weight']}`\n"
