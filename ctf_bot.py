@@ -38,9 +38,16 @@ async def upcoming(interaction: discord.Interaction, limit: int):
             embed = discord.Embed(title="Upcoming CTF Events", color=discord.Color.blue())
 
             for event in ctf_events:
-                embed.add_field(name=event['title'], value=f"Start: `{event['start']}`\nFinish: `{event['finish']}`\nURL: [Link]({event['url']})", inline=False)
+                embed.add_field(name=event['title'], 
+                                value=(
+                                    f"Start: `{event['start']}`\n"
+                                    f"End: `{event['finish']}`\n"
+                                    f"Format: `{event['format']}`\n"
+                                    f"Participants: `{event['participants']}`\n"
+                                    f"URL: [Link]({event['url']})"
+                                    ), inline=False)
 
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed)
         else:
             await interaction.response.send_message('Could not fetch CTF events.', ephemeral=True)
 
@@ -63,6 +70,9 @@ def get_ctf_events(limit=5):
                 'title': event['title'],
                 'start': format_datetime(event['start']),
                 'finish': format_datetime(event['finish']),
+                'url': event['url'],
+                'format': event.get('format', 'N/A'),  # Assuming 'format' might not always be available
+                'participants': event.get('participants', 'N/A'),  # Assuming 'participants' might not always be available
                 'url': event['url']
             }
             formatted_events.append(formatted_event)
